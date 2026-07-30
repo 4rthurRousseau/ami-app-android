@@ -37,7 +37,10 @@ enum class Screen {
 }
 
 @Composable
-fun HomeApp(navController: NavHostController = rememberNavController(), pendingUrl: String? = null) {
+fun HomeApp(
+    navController: NavHostController = rememberNavController(),
+    pendingUrl: String? = null
+) {
 
     val TAG = object {}.javaClass.enclosingClass?.simpleName ?: "AMI"
     val webViewViewModel = viewModel<WebViewViewModel>()
@@ -137,9 +140,12 @@ fun HomeApp(navController: NavHostController = rememberNavController(), pendingU
         composable(route = Screen.Settings.name) {
             SettingsScreen(
                 onBackButton = {
-                    navController.navigate(Screen.Home.name)
+                    navController.popBackStack()
                 },
-                webViewViewModel = webViewViewModel
+                webViewViewModel = webViewViewModel,
+                goHome = {
+                    navController.navigate(Screen.Home.name)
+                }
             )
         }
         composable(route = Screen.Onboarding.name) {

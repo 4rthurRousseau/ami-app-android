@@ -1,6 +1,7 @@
 package fr.gouv.ami.home
 
 import android.util.Log
+import android.webkit.WebView
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -13,12 +14,15 @@ class WebViewViewModel : BaseViewModel() {
     private val TAG = this::class.java.simpleName
     var currentUrl by mutableStateOf(baseUrl)
     var lastUrl by mutableStateOf(baseUrl) //not used for now
+    var canGoBack by mutableStateOf(false)
 
     var isOnContactPage by mutableStateOf(false)
         private set
 
     var isRefreshing by mutableStateOf(false)
         private set
+
+    var webView by mutableStateOf<WebView?>(null)
 
     private val _notificationPermissionRequested = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val notificationPermissionRequested = _notificationPermissionRequested.asSharedFlow()

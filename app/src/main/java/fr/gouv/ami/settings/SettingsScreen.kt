@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +35,11 @@ import fr.gouv.ami.home.isPermissionGranted
 import fr.gouv.ami.ui.theme.AMITheme
 
 @Composable
-fun SettingsScreen(webViewViewModel: WebViewViewModel, onBackButton: () -> Unit) {
+fun SettingsScreen(
+    webViewViewModel: WebViewViewModel,
+    onBackButton: () -> Unit,
+    goHome: () -> Unit
+) {
 
     NotificationPermissionHandler(webViewViewModel)
     val context = LocalContext.current
@@ -98,7 +103,7 @@ fun SettingsScreen(webViewViewModel: WebViewViewModel, onBackButton: () -> Unit)
 @Composable
 fun PreviewSettingsScreenLight() {
     AMITheme {
-        SettingsScreen(viewModel()) {}
+        SettingsScreen(viewModel(), onBackButton = {}, goHome = {})
     }
 }
 
@@ -106,6 +111,6 @@ fun PreviewSettingsScreenLight() {
 @Composable
 fun PreviewSettingsScreenDark() {
     AMITheme {
-        SettingsScreen(viewModel()) {}
+        SettingsScreen(viewModel(), onBackButton = {}, goHome = {})
     }
 }
