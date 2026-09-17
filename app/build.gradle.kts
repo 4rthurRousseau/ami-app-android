@@ -1,3 +1,4 @@
+import com.android.build.api.variant.BuildConfigField
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -11,7 +12,7 @@ plugins {
 
 // Create a variable called keystorePropertiesFile, and initialize it to your
 // keystore.properties file, in the rootProject folder.
-val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystorePropertiesFile = rootProject.file("upload-keystore.properties")
 
 // Initialize a new Properties() object called keystoreProperties.
 val keystoreProperties = Properties()
@@ -34,10 +35,10 @@ android {
 
     defaultConfig {
         applicationId = "fr.gouv.ami"
-        minSdk = 26
+        minSdk = 28
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.2.2"
+        versionCode = 9
+        versionName = "0.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,7 +48,7 @@ android {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
             }
         }
@@ -73,11 +74,6 @@ android {
             applicationIdSuffix = ".local"
             versionNameSuffix = "-local"
 
-            // Load from local.properties if available, otherwise use default
-            // val localBaseUrl = localProperties.getProperty("local.base.url", "https://10.0.2.2:5173")
-            val localBaseUrl = localProperties.getProperty("local.base.url", "https://192.168.1.55:5173")
-
-            buildConfigField("String", "BASE_URL", "\"$localBaseUrl\"")
             resValue("string", "app_name", "AMI Local")
         }
         create("staging") {
@@ -85,21 +81,17 @@ android {
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
 
-            buildConfigField(
-                "String",
-                "BASE_URL",
-                "\"https://ami-back-staging.osc-fr1.scalingo.io\""
-            )
-
             resValue("string", "app_name", "AMI Staging")
+        }
+        create("preprod") {
+            dimension = "version"
+            applicationIdSuffix = ".preprod"
+            versionNameSuffix = "-preprod"
+
+            resValue("string", "app_name", "AMI Preprod")
         }
         create("prod") {
             dimension = "version"
-            buildConfigField(
-                "String",
-                "BASE_URL",
-                "\"https://ami-back-prod.osc-secnum-fr1.scalingo.io\""
-            )
         }
     }
 
@@ -116,6 +108,34 @@ android {
     }
 }
 
+// Assemble pass used to inject flavored secrets from .env.${flavor} file into BuildConfig and Manifest.
+androidComponents.onVariants { variant ->
+    val flavor = variant.flavorName ?: return@onVariants
+    val envFileRef = rootProject.file("config/.env.${flavor}")
+    if (!envFileRef.exists()) return@onVariants
+
+    val props = Properties().apply { envFileRef.inputStream().use(::load) }
+    props.forEach { k, v ->
+        val key = k.toString().replace(Regex("[^A-Za-z_$0-9]"), "")
+        val value = v.toString().removeSurrounding("\"")
+        variant.buildConfigFields?.put(key, BuildConfigField("String", "\"$value\"", null))
+        variant.manifestPlaceholders.put(key, value)
+    }
+
+    val baseHost = props.getProperty("BASE_HOST_STRING") ?: error("BASE_HOST_STRING missing in config/.env.$flavor")
+    variant.buildConfigFields?.apply {
+        val unquotedBaseHost = baseHost.removeSurrounding("\"")
+        put("BASE_URL", BuildConfigField("String", "\"https://$unquotedBaseHost/\"", null))
+    }
+    val suffix = variant.name.replaceFirstChar(Char::uppercase)
+    val gen = tasks.register<GenerateNetworkSecurityConfigTask>(
+        "generate${suffix}NetworkSecurityConfig") {
+        envFile.set(envFileRef)
+    }
+
+    variant.sources.res?.addGeneratedSourceDirectory(gen, GenerateNetworkSecurityConfigTask::outputDir)
+}
+
 dependencies {
 
     implementation(libs.androidx.core.ktx)
@@ -130,11 +150,14 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.androidx.junit.ktx)
+    implementation(libs.androidx.datastore.preferences.core)
     implementation(libs.androidx.webkit)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
@@ -157,4 +180,17 @@ dependencies {
 
     //crypto
     implementation(libs.androidx.security.crypto)
+
+    //coroutine
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+
+    //storage
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.biometric)
+
+    //passkeys
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.androidx.webkit.v1140)
 }

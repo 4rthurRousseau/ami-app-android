@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -22,11 +21,11 @@ import fr.gouv.ami.api.apiService
 import fr.gouv.ami.api.baseUrl
 import fr.gouv.ami.data.models.Subscription
 import fr.gouv.ami.data.models.SubscriptionRequest
-import fr.gouv.ami.utils.ManagerLocalStorage
+import fr.gouv.ami.utils.DeviceIdUtils
+import fr.gouv.ami.utils.storage.LowStorageManager
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class FirebaseService : FirebaseMessagingService() {
 
@@ -41,42 +40,44 @@ class FirebaseService : FirebaseMessagingService() {
     val CHANNEL_ID = "1000"
 
     override fun onNewToken(token: String) {
-        Log.d(TAG, token)
-        ManagerLocalStorage(this).saveToken(token)
-        sendRegistration(this)
+        Log.d(TAG, "the new firebase token is $token")
+
+        CoroutineScope(Dispatchers.IO).launch {
+            LowStorageManager(applicationContext).saveFcmToken(token)
+            sendRegistration(token)
+        }
     }
 
-    fun sendRegistration(context: Context) {
+    suspend fun sendRegistration(fcmToken: String) {
         val cookieManager = CookieManager.getInstance()
         val cookies = cookieManager.getCookie(baseUrl)
-        val managerStorage = ManagerLocalStorage(context)
-        if (!cookies.isNullOrEmpty() && !managerStorage.getToken().isNullOrEmpty()) {
+        if (!cookies.isNullOrEmpty()) {
             val values = cookies.split(";")
             var bearer: String? = null
             for (cookie in values) {
                 if (cookie.contains("token")) {
                     bearer = cookie.split("\"")[1]
                     Log.d(TAG, "bearer: $bearer")
-                    managerStorage.saveBearer(bearer)
+                    LowStorageManager(this).saveBearer(bearer)
                     break
                 }
             }
             if (bearer != null) {
+                val deviceId = DeviceIdUtils(this).getOrCreateDeviceId()
                 val subscription = Subscription(
-                    fcmToken = managerStorage.getToken()!!,
-                    deviceId = managerStorage.getOrCreateDeviceId(),
+                    fcmToken = fcmToken,
+                    deviceId = deviceId,
                     platform = "android",
                     appVersion = BuildConfig.VERSION_NAME,
-                    model = managerStorage.getDeviceModel()
+                    model = getDeviceModel()
                 )
-                GlobalScope.launch {
-                    withContext(Dispatchers.IO) {
-                        apiService.registrations(bearer, SubscriptionRequest(subscription))
-                    }
-                }
+
+                apiService.registrations(bearer, SubscriptionRequest(subscription))
+
             }
         }
     }
+
 
     override fun onMessageReceived(message: RemoteMessage) {
         createNotificationChannel()
@@ -129,4 +130,11 @@ class FirebaseService : FirebaseMessagingService() {
         notificationManager.createNotificationChannel(channel)
     }
 
+    /**
+     * Returns the device model for display/debugging purposes.
+     * Example: "Samsung SM-G991B"
+     */
+    fun getDeviceModel(): String {
+        return "${Build.MANUFACTURER} ${Build.MODEL}"
+    }
 }

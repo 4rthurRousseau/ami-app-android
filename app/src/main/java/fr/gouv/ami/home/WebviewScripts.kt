@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import fr.gouv.ami.BuildConfig
 import fr.gouv.ami.R
-import fr.gouv.ami.utils.ManagerLocalStorage
+import fr.gouv.ami.utils.DeviceIdUtils
 
 class WebviewScripts {
 
@@ -25,11 +25,10 @@ class WebviewScripts {
     companion object {
         val TAG = this::class.java.simpleName
 
-        fun nativeInfosScript(
+        suspend fun nativeInfosScript(
             context: Context
         ): String {
-            val managerStorage = ManagerLocalStorage(context)
-            val deviceId = managerStorage.getOrCreateDeviceId()
+            val deviceId = DeviceIdUtils(context).getOrCreateDeviceId()
             Log.d(TAG, "device_id sending in nativeInfosScript is $deviceId")
 
             return """

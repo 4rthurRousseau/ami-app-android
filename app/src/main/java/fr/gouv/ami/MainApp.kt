@@ -24,7 +24,7 @@ import fr.gouv.ami.home.HomeScreen
 import fr.gouv.ami.home.WebViewViewModel
 import fr.gouv.ami.settings.SettingsScreen
 import fr.gouv.ami.settings.OnboardingNotificationScreen
-import fr.gouv.ami.utils.ManagerLocalStorage
+import fr.gouv.ami.utils.storage.LowStorageManager
 import kotlinx.coroutines.flow.catch
 
 //list of all screens
@@ -44,13 +44,14 @@ fun HomeApp(
 
     val TAG = object {}.javaClass.enclosingClass?.simpleName ?: "AMI"
     val webViewViewModel = viewModel<WebViewViewModel>()
-    val storage = ManagerLocalStorage(LocalContext.current)
+    val storage = LowStorageManager(LocalContext.current)
     var isConnected by remember {
         mutableStateOf(false)
     }
 
     LaunchedEffect(Unit) {
-        storage.getBearer()?.let { token ->
+        val token = storage.getBearerToken()
+        if (token != null) {
             val authenticationFlow = checkAuth(token)
             authenticationFlow
                 .catch { e ->

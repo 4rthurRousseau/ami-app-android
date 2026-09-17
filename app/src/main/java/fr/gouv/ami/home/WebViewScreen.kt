@@ -1,9 +1,12 @@
 package fr.gouv.ami.home
 
-import android.app.Activity
+import android.Manifest
+import android.content.Intent
+import android.content.res.Configuration
+import android.net.Uri
+import android.provider.Settings
 import android.util.Log
 import android.webkit.JavascriptInterface
-import android.content.res.Configuration
 import android.view.ViewGroup
 import android.webkit.JsResult
 import android.webkit.WebChromeClient
@@ -15,7 +18,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,30 +34,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import fr.gouv.ami.MainActivity
 import fr.gouv.ami.R
 import fr.gouv.ami.api.baseUrl
 import fr.gouv.ami.components.BackBar
 import fr.gouv.ami.components.DownloadLogsButton
 import fr.gouv.ami.components.DownloadLogsViewModel
+import fr.gouv.ami.components.ImportFileBottomSheet
 import fr.gouv.ami.components.InformationBanner
 import fr.gouv.ami.components.InformationType
-import fr.gouv.ami.components.MainWebViewClient
+import fr.gouv.ami.components.PrimaryButton
+import fr.gouv.ami.components.SecondaryButton
+import fr.gouv.ami.components.webviewClient.MainWebViewClient
 import fr.gouv.ami.global.BaseScreen
+import fr.gouv.ami.global.PermissionManager
 import fr.gouv.ami.home.WebviewScripts.Companion.nativeInfosScript
-import fr.gouv.ami.notifications.FirebaseService
-import fr.gouv.ami.utils.ManagerLocalStorage
-import fr.gouv.ami.ui.theme.AMITheme
 import fr.gouv.ami.home.WebviewScripts.EventWebview
+import fr.gouv.ami.notifications.FirebaseService
+import fr.gouv.ami.ui.theme.AMITheme
+import fr.gouv.ami.utils.FileUtils
+import fr.gouv.ami.utils.storage.LowStorageManager
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WebViewScreen(
     webViewViewModel: WebViewViewModel,
@@ -64,11 +80,11 @@ fun WebViewScreen(
     var hasBackBar by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     val swipeRefreshRef = remember { mutableStateOf<SwipeRefreshLayout?>(null) }
-    val context = LocalContext.current
+    val activity = LocalContext.current as MainActivity
 
     LaunchedEffect(Unit) {
         if (webViewViewModel.webView == null) {
-            webViewViewModel.webView = WebView(context).apply {
+            webViewViewModel.webView = WebView(activity).apply {
 
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = true
@@ -122,18 +138,27 @@ fun WebViewScreen(
                     )
                 }
 
+                setDownloadListener { url, userAgent, contentDisposition, mimeType, contentLength ->
+                    FileUtils(context).downloadFile(
+                        url.toUri(),
+                        contentDisposition,
+                        mimeType
+                    )
+                }
+
                 addJavascriptInterface(object {
                     @JavascriptInterface
                     fun onEvent(eventName: String, dataJson: String) {
                         Log.d("WebView", "Event received: $eventName - $dataJson")
-                        val storage = ManagerLocalStorage(context)
+                        val storage = LowStorageManager(context)
                         val event = EventWebview.fromValue(eventName)
                         when (event) {
                             EventWebview.USER_LOGGED_IN -> {
-                                if (storage.getToken() != "") {
-                                    // Post to main thread to access WebView
-                                    webViewViewModel.viewModelScope.launch {
-                                        FirebaseService().sendRegistration(context)
+                                // Post to main thread to access WebView
+                                webViewViewModel.viewModelScope.launch {
+                                    val fcmToken = storage.getFcmToken()
+                                    if (!fcmToken.isNullOrEmpty()) {
+                                        FirebaseService().sendRegistration(fcmToken)
                                     }
                                 }
                                 if (!hasRequestedPermissionBefore(context)) {
@@ -206,6 +231,11 @@ fun WebViewScreen(
 
     /** UI **/
 
+    val context = LocalContext.current
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var showPermissionAlert by remember { mutableStateOf(false) }
+
     BaseScreen(viewModel = webViewViewModel) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -234,7 +264,7 @@ fun WebViewScreen(
 
                 if (hasBackBar) {
                     BackBar {
-                        (context as Activity).onBackPressed()
+                        webViewViewModel.webView?.loadUrl(baseUrl)
                     }
                 }
 
@@ -255,9 +285,10 @@ fun WebViewScreen(
                             webViewViewModel.webView!!
                             (webViewViewModel.webView!!.parent as? ViewGroup)?.removeView(
                                 webViewViewModel.webView!!
-                            )
-                            swipeRefreshRef.value?.addView(webViewViewModel.webView)
 
+                            )
+
+                            swipeRefreshRef.value?.addView(webViewViewModel.webView)
                             swipeRefreshRef.value?.setOnRefreshListener {
                                 webViewViewModel.requestRefresh()
                             }
@@ -266,9 +297,83 @@ fun WebViewScreen(
                         },
                         update = {
                             swipeRefreshRef.value?.isRefreshing = webViewViewModel.isRefreshing
+
+                            // allow passkey if it is available
+                            // TODO: Why not use the closure parameter `webView`? Would avoid to test its real value.
+                            webViewViewModel.webView?.let {
+                                run {
+                                    webViewViewModel.configurePasskeys(it)
+                                }
+                            }
                         }
                     )
                 }
+            }
+
+            //bottom sheet for import files
+            if (showBottomSheet) {
+                ImportFileBottomSheet(
+                    sheetState,
+                    onDismissRequest = {
+                        showBottomSheet = false
+                        activity.cancelFileChooser()
+                    },
+                    onFileSelected = {
+                        showBottomSheet = false
+                        val intent = activity.fileChooserParams?.createIntent()
+                            ?: Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                                type = "*/*"
+                                addCategory(Intent.CATEGORY_OPENABLE)
+                                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                            }
+
+                        activity.filePickerLauncher.launch(intent)
+                    },
+                    onCameraSelected = {
+                        PermissionManager(activity).requestCameraPermission { granted ->
+                            if (granted) {
+                                showBottomSheet = false
+                                activity.cameraImageUri = FileUtils(activity).createCameraImageUri()
+                                activity.cameraLauncher.launch(activity.cameraImageUri!!)
+                            } else {
+                                //if permission is denied, the bottomsheet remains visible and an alertDialog is displayed
+                                activity.cancelFileChooser()
+                                if (!ActivityCompat.shouldShowRequestPermissionRationale(
+                                        activity,
+                                        Manifest.permission.CAMERA
+                                    )
+                                ) {
+                                    showPermissionAlert = true
+                                }
+                            }
+                        }
+                    })
+            }
+
+            if (showPermissionAlert) {
+                AlertDialog(
+                    onDismissRequest = { showPermissionAlert = false },
+                    confirmButton = {
+                        PrimaryButton(
+                            text = stringResource(R.string.allow_camera),
+                            onClick = {
+                                showPermissionAlert = false
+                                val intent = Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", context.packageName, null)
+                                )
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            })
+                    },
+                    dismissButton = {
+                        SecondaryButton(
+                            text = stringResource(R.string.common_cancel),
+                            onClick = { showPermissionAlert = false })
+                    },
+                    text = {
+                        Text(stringResource(R.string.allow_camera_modal))
+                    })
             }
 
             // Download logs button - appears only on contact page

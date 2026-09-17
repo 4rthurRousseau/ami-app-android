@@ -1,10 +1,11 @@
-package fr.gouv.ami.components
+package fr.gouv.ami.components.webviewClient
 
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
@@ -14,6 +15,7 @@ import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import fr.gouv.ami.components.handleSslError
 
 class MainWebViewClient(
     private val baseUrl: String,
@@ -61,7 +63,7 @@ class MainWebViewClient(
     override fun onPageStarted(
         view: WebView?,
         url: String?,
-        favicon: android.graphics.Bitmap?
+        favicon: Bitmap?
     ) {
         super.onPageStarted(view, url, favicon)
         Log.d(TAG, "onPageStarted with url ${url}")
