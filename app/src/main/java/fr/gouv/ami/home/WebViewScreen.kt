@@ -164,6 +164,10 @@ fun WebViewScreen(
                                 }
                             }
 
+                            EventWebview.WEBAPP_BRIDGE_READY -> {
+                                Log.d(TAG, "webapp bridge is ready")
+                            }
+
                             else -> {}
                         }
                     }

@@ -12,7 +12,8 @@ class WebviewScripts {
         USER_LOGGED_IN("user_logged_in"),
         USER_LOGGED_OUT("user_logged_out"),
         NOTIFICATION_PERMISSION_REQUESTED("notification_permission_requested"),
-        NOTIFICATION_PERMISSION_REMOVED("notification_permission_removed");
+        NOTIFICATION_PERMISSION_REMOVED("notification_permission_removed"),
+        WEBAPP_BRIDGE_READY("webappBridgeReady");
 
 
         companion object {
