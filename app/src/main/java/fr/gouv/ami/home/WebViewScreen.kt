@@ -191,6 +191,13 @@ fun WebViewScreen(
 
                             EventWebview.WEBAPP_BRIDGE_READY -> {
                                 Log.d(TAG, "webapp bridge is ready")
+                                webViewViewModel.webView?.post {
+                                    evaluateJavascript(
+                                        "window.WebAppBridge.getUrlAliases();",
+                                        { result ->
+                                            Log.d(TAG, "getUrlAliases result = $result")
+                                        })
+                                }
                             }
 
                             else -> {}
