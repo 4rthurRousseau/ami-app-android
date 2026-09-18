@@ -56,6 +56,7 @@ import fr.gouv.ami.components.InformationType
 import fr.gouv.ami.components.PrimaryButton
 import fr.gouv.ami.components.SecondaryButton
 import fr.gouv.ami.components.webviewClient.MainWebViewClient
+import fr.gouv.ami.data.models.UrlAliases
 import fr.gouv.ami.global.BaseScreen
 import fr.gouv.ami.global.PermissionManager
 import fr.gouv.ami.home.WebviewScripts.Companion.nativeInfosScript
@@ -65,6 +66,7 @@ import fr.gouv.ami.ui.theme.AMITheme
 import fr.gouv.ami.utils.FileUtils
 import fr.gouv.ami.utils.storage.LowStorageManager
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -195,7 +197,11 @@ fun WebViewScreen(
                                     evaluateJavascript(
                                         "window.WebAppBridge.getUrlAliases();",
                                         { result ->
-                                            Log.d(TAG, "getUrlAliases result = $result")
+                                            val aliasesJson = Json.decodeFromString<String>(result)
+                                            Log.d(TAG, "getUrlAliases result = $aliasesJson")
+                                            val aliases = Json.decodeFromString<Array<UrlAliases>>(
+                                                aliasesJson
+                                            )
                                         })
                                 }
                             }
