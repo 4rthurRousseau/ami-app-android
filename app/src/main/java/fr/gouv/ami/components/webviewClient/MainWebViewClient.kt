@@ -32,6 +32,8 @@ class MainWebViewClient(
         // Show loader immediately on link click (before onPageStarted)
         onLoadingChanged(true)
 
+        Log.d(TAG, "shouldOverrideUrlLoading is called from ${request?.url?.toString()}")
+
         // Try launching the URL in an external app, in case it's a deeplink.
         val url = request?.url?.toString() ?: return false
         val context = view?.context ?: return false

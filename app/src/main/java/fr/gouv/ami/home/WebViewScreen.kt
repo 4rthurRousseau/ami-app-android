@@ -81,6 +81,7 @@ fun WebViewScreen(
     val TAG = "WebViewScreen"
     var hasBackBar by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    var aliases by remember { mutableStateOf(arrayOf<UrlAliases?>(null)) }
     val swipeRefreshRef = remember { mutableStateOf<SwipeRefreshLayout?>(null) }
     val activity = LocalContext.current as MainActivity
 
@@ -198,8 +199,7 @@ fun WebViewScreen(
                                         "window.WebAppBridge.getUrlAliases();",
                                         { result ->
                                             val aliasesJson = Json.decodeFromString<String>(result)
-                                            Log.d(TAG, "getUrlAliases result = $aliasesJson")
-                                            val aliases = Json.decodeFromString<Array<UrlAliases>>(
+                                            aliases = Json.decodeFromString<Array<UrlAliases?>>(
                                                 aliasesJson
                                             )
                                         })
