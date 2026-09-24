@@ -4,7 +4,10 @@ import android.content.Context
 import android.util.Log
 import fr.gouv.ami.BuildConfig
 import fr.gouv.ami.R
+import fr.gouv.ami.navigation.promotedUrls
 import fr.gouv.ami.utils.DeviceIdUtils
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class WebviewScripts {
 
@@ -30,6 +33,7 @@ class WebviewScripts {
         ): String {
             val deviceId = DeviceIdUtils(context).getOrCreateDeviceId()
             Log.d(TAG, "device_id sending in nativeInfosScript is $deviceId")
+            val urls = Json.encodeToString(promotedUrls)
 
             return """
         (function() {
@@ -43,7 +47,8 @@ class WebviewScripts {
                     build: ${BuildConfig.VERSION_CODE},
                     environment: "${BuildConfig.FLAVOR}",
                     mode: "${BuildConfig.BUILD_TYPE}",
-                    device_id: "$deviceId"
+                    device_id: "$deviceId",
+                    promoted_url_aliases: "$urls"
                 };
             };
         })();
