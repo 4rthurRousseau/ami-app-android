@@ -134,7 +134,7 @@ fun HomeApp(
         composable(route = Screen.Settings.name) {
             SettingsScreen(
                 onBackButton = {
-                    navController.navigate(Screen.Home.name)
+                    navController.popBackStack()
                 },
                 webViewViewModel = webViewViewModel,
             )
