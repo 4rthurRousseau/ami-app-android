@@ -48,7 +48,7 @@ class WebviewScripts {
                     environment: "${BuildConfig.FLAVOR}",
                     mode: "${BuildConfig.BUILD_TYPE}",
                     device_id: "$deviceId",
-                    promoted_url_aliases: "$urls"
+                    promoted_url_aliases: ${Json.encodeToString(urls)}
                 };
             };
         })();

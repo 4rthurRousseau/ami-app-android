@@ -46,6 +46,7 @@ import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import fr.gouv.ami.MainActivity
 import fr.gouv.ami.R
+import fr.gouv.ami.Screen
 import fr.gouv.ami.api.baseUrl
 import fr.gouv.ami.components.BackBar
 import fr.gouv.ami.components.DownloadLogsButton
@@ -72,16 +73,12 @@ import kotlinx.serialization.json.Json
 @Composable
 fun WebViewScreen(
     webViewViewModel: WebViewViewModel,
-    goSettings: () -> Unit,
-    goAuth: () -> Unit,
-    goOnboarding: () -> Unit,
+    navigate: (Screen) -> Unit,
     downloadLogsViewModel: DownloadLogsViewModel = viewModel(),
-    startUrl: String = baseUrl
 ) {
     val TAG = "WebViewScreen"
     var hasBackBar by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
-    var aliases by remember { mutableStateOf(arrayOf<UrlAliases?>(null)) }
     val swipeRefreshRef = remember { mutableStateOf<SwipeRefreshLayout?>(null) }
     val activity = LocalContext.current as MainActivity
 
@@ -108,18 +105,11 @@ fun WebViewScreen(
                 }
                 webViewClient = MainWebViewClient(
                     baseUrl = webViewViewModel.currentUrl,
+                    webViewModel = webViewViewModel,
                     onBackBarChanged = { hasBackBar = it },
                     onUrlChanged =
                         {
-                            if (it.endsWith("#/preferences/notifications") || it.endsWith(
-                                    "#/settings"
-                                )
-                            ) {
-                                webViewViewModel.webView?.goBack()
-                                goSettings()
-                            } else {
-                                webViewViewModel.onUrlChanged(it)
-                            }
+                            webViewViewModel.onUrlChanged(it)
                         },
                     onLoadingChanged = { isLoading = it },
                     onCanGoBackChanged = { webViewViewModel.canGoBack = it },
@@ -127,6 +117,7 @@ fun WebViewScreen(
                         webViewViewModel.notifyPageFinished()
                     },
                     onSslError = { webViewViewModel.showSSLErrorBanner() },
+                    navigate = navigate
                 )
 
                 if (
@@ -166,7 +157,7 @@ fun WebViewScreen(
                                 }
                                 if (!hasRequestedPermissionBefore(context)) {
                                     webViewViewModel.viewModelScope.launch {
-                                        goOnboarding()
+                                        navigate(Screen.Onboarding)
                                     }
                                 }
                             }
@@ -174,7 +165,7 @@ fun WebViewScreen(
                             EventWebview.USER_LOGGED_OUT -> {
                                 webViewViewModel.viewModelScope.launch {
                                     storage.clearBearer()
-                                    goAuth()
+                                    navigate(Screen.FranceConnection)
                                 }
                             }
 
@@ -199,9 +190,10 @@ fun WebViewScreen(
                                         "window.WebAppBridge.getUrlAliases();",
                                         { result ->
                                             val aliasesJson = Json.decodeFromString<String>(result)
-                                            aliases = Json.decodeFromString<Array<UrlAliases?>>(
-                                                aliasesJson
-                                            )
+                                            webViewViewModel.aliases =
+                                                Json.decodeFromString<Array<UrlAliases?>>(
+                                                    aliasesJson
+                                                )
                                         })
                                 }
                             }
@@ -418,9 +410,7 @@ fun PreviewWebViewScreenLight() {
     AMITheme {
         WebViewScreen(
             webViewViewModel = viewModel(),
-            goSettings = {},
-            goAuth = {},
-            goOnboarding = {})
+            navigate = {})
     }
 }
 
@@ -430,8 +420,6 @@ fun PreviewWebViewScreenDark() {
     AMITheme {
         WebViewScreen(
             webViewViewModel = viewModel(),
-            goSettings = {},
-            goAuth = {},
-            goOnboarding = {})
+            navigate = {})
     }
 }

@@ -15,33 +15,51 @@ import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import fr.gouv.ami.Screen
 import fr.gouv.ami.components.handleSslError
+import fr.gouv.ami.home.WebViewViewModel
+import fr.gouv.ami.navigation.NavigatorMapping
+import fr.gouv.ami.navigation.PromotedUrls
 
 class MainWebViewClient(
     private val baseUrl: String,
+    private val webViewModel: WebViewViewModel,
     private val onBackBarChanged: (Boolean) -> Unit,
     private val onUrlChanged: (String) -> Unit,
     private val onLoadingChanged: (Boolean) -> Unit,
     private val onCanGoBackChanged: (Boolean) -> Unit = {},
     private val onPageFinished: () -> Unit = {},
     private val onSslError: () -> Unit = {},
+    private val navigate: (Screen) -> Unit = {}
 ) : WebViewClient() {
     val TAG = "MainWebViewClient"
 
     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-        // Show loader immediately on link click (before onPageStarted)
-        onLoadingChanged(true)
 
         Log.d(TAG, "shouldOverrideUrlLoading is called from ${request?.url?.toString()}")
+        webViewModel.aliases.forEach { urlAlias ->
+            urlAlias?.let {
+                if (request?.url.toString().endsWith(it.pattern)) {
+                    view?.goBack()
+                    PromotedUrls.from(urlAlias.alias)?.let { alias ->
+                        val screen = NavigatorMapping.resolve(alias)
+                        navigate(screen ?: Screen.Home) }
 
+                    return true
+                }
+            }
+        }
+
+        // Show loader immediately on link click (before onPageStarted)
+        onLoadingChanged(true)
         // Try launching the URL in an external app, in case it's a deeplink.
         val url = request?.url?.toString() ?: return false
         val context = view?.context ?: return false
 
-        if (Build.VERSION.SDK_INT >= 30) {
-            return launchNativeApi30(context, url)
+        return if (Build.VERSION.SDK_INT >= 30) {
+            launchNativeApi30(context, url)
         } else {
-            return launchNativeBeforeApi30(context, url)
+            launchNativeBeforeApi30(context, url)
         }
     }
 

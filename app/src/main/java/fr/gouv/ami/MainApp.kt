@@ -105,17 +105,10 @@ fun HomeApp(
             )
 
             HomeScreen(
-                goSettings = {
-                    navController.navigate(Screen.Settings.name)
-                },
-                goOnboarding = {
-                    navController.navigate(Screen.Onboarding.name)
-                },
                 webViewViewModel = webViewViewModel,
-                goAuth = {
-                    navController.navigate(Screen.FranceConnection.name)
-                },
-                startUrl = url,
+                navigate = { screen ->
+                    navController.navigate(screen.name)
+                }
             )
         }
 
@@ -141,12 +134,9 @@ fun HomeApp(
         composable(route = Screen.Settings.name) {
             SettingsScreen(
                 onBackButton = {
-                    navController.popBackStack()
+                    navController.navigate(Screen.Home.name)
                 },
                 webViewViewModel = webViewViewModel,
-                goHome = {
-                    navController.navigate(Screen.Home.name)
-                }
             )
         }
         composable(route = Screen.Onboarding.name) {
