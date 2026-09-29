@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
@@ -29,13 +28,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.net.toUri
@@ -49,8 +46,6 @@ import fr.gouv.ami.R
 import fr.gouv.ami.Screen
 import fr.gouv.ami.api.baseUrl
 import fr.gouv.ami.components.BackBar
-import fr.gouv.ami.components.DownloadLogsButton
-import fr.gouv.ami.components.DownloadLogsViewModel
 import fr.gouv.ami.components.ImportFileBottomSheet
 import fr.gouv.ami.components.InformationBanner
 import fr.gouv.ami.components.InformationType
@@ -73,8 +68,7 @@ import kotlinx.serialization.json.Json
 @Composable
 fun WebViewScreen(
     webViewViewModel: WebViewViewModel,
-    navigate: (Screen) -> Unit,
-    downloadLogsViewModel: DownloadLogsViewModel = viewModel(),
+    navigate: (Screen) -> Unit
 ) {
     val TAG = "WebViewScreen"
     var hasBackBar by remember { mutableStateOf(false) }
@@ -291,7 +285,6 @@ fun WebViewScreen(
                             webViewViewModel.webView!!
                             (webViewViewModel.webView!!.parent as? ViewGroup)?.removeView(
                                 webViewViewModel.webView!!
-
                             )
 
                             swipeRefreshRef.value?.addView(webViewViewModel.webView)
@@ -381,26 +374,6 @@ fun WebViewScreen(
                         Text(stringResource(R.string.allow_camera_modal))
                     })
             }
-
-            // Download logs button - appears only on contact page
-            DownloadLogsButton(
-                visible = webViewViewModel.isOnContactPage,
-                onClick = {
-                    // Fetch user_fc_hash from localStorage before sharing logs
-                    webViewViewModel.webView?.evaluateJavascript("localStorage.getItem('user_fc_hash')") { result ->
-                        // Result comes as JSON string: "\"value\"" or "null"
-                        val userFcHash = result
-                            ?.trim()
-                            ?.removeSurrounding("\"")
-                            ?.takeIf { it != "null" }
-                        downloadLogsViewModel.shareLogs(context, userFcHash)
-                    } ?: downloadLogsViewModel.shareLogs(context)
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 24.dp)
-            )
         }
     }
 }

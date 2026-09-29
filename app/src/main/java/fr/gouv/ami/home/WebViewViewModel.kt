@@ -20,9 +20,6 @@ class WebViewViewModel : BaseViewModel() {
     var lastUrl by mutableStateOf(baseUrl) //not used for now
     var canGoBack by mutableStateOf(false)
 
-    var isOnContactPage by mutableStateOf(false)
-        private set
-
     var isRefreshing by mutableStateOf(false)
         private set
 
@@ -54,7 +51,6 @@ class WebViewViewModel : BaseViewModel() {
             lastUrl = currentUrl
         }
         currentUrl = url
-        isOnContactPage = url.contains("/#/contact")
     }
 
     fun onGoHome() {
