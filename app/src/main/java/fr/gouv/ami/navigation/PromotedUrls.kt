@@ -11,6 +11,7 @@ enum class PromotedUrls(val alias: String) {
 }
 
 val promotedUrls = arrayOf(
-    PromotedUrls.WELCOME_NOTIFICATION_ACTIVATION.alias,
+    //The onboarding screen cannot be promoted until multi-webview support is implemented
+    //PromotedUrls.WELCOME_NOTIFICATION_ACTIVATION.alias,
     PromotedUrls.PREFERENCES_NOTIFICATIONS_ACTIVATION.alias
 )

@@ -155,11 +155,12 @@ fun WebViewScreen(
                                         FirebaseService().sendRegistration(fcmToken)
                                     }
                                 }
-                                if (!hasRequestedPermissionBefore(context)) {
+                                //We're letting the web app handle the onboarding screen for now
+                                /*if (!hasRequestedPermissionBefore(context)) {
                                     webViewViewModel.viewModelScope.launch {
                                         navigate(Screen.Onboarding)
                                     }
-                                }
+                                }*/
                             }
 
                             EventWebview.USER_LOGGED_OUT -> {
