@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
-import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
 import android.util.Log
@@ -36,16 +35,17 @@ class MainWebViewClient(
 ) : WebViewClient() {
     val TAG = "MainWebViewClient"
 
-    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
 
-        Log.d(TAG, "shouldOverrideUrlLoading is called from ${request.url?.toString()}")
+
+        Log.d(TAG, "shouldOverrideUrlLoading is called from ${request?.url?.toString()}")
 
         val urlAlias = webViewModel.aliases.firstOrNull {
-            request.url.toString().endsWith(it.pattern)
+            request?.url.toString().endsWith(it.pattern)
         }
         urlAlias?.let {
-            if (request.url.toString().endsWith(urlAlias.pattern)) {
-                view.goBack()
+            if (request?.url.toString().endsWith(urlAlias.pattern)) {
+                view?.goBack()
                 PromotedUrls.from(urlAlias.alias)?.let { alias ->
                     val screen = NavigatorMapping.resolve(alias)
                     navigate(screen ?: Screen.Home)
@@ -58,8 +58,8 @@ class MainWebViewClient(
         // Show loader immediately on link click (before onPageStarted)
         onLoadingChanged(true)
         // Try launching the URL in an external app, in case it's a deeplink.
-        val url = request.url?.toString() ?: return false
-        val context = view.context ?: return false
+        val url = request?.url?.toString() ?: return false
+        val context = view?.context ?: return false
 
         return if (Build.VERSION.SDK_INT >= 30) {
             launchNativeApi30(context, url)
@@ -69,23 +69,25 @@ class MainWebViewClient(
     }
 
     override fun doUpdateVisitedHistory(
-        view: WebView,
-        url: String,
+        view: WebView?,
+        url: String?,
         isReload: Boolean
     ) {
-        Log.d(TAG, "UpdateVisitedHistory: baseUrl is: $baseUrl, url visited: $url")
-        if (url.isNotEmpty()) {
+        Log.d(TAG, "UpdateVisitedHistory: baseUrl is: ${baseUrl}, url visited: $url")
+        if (!url.isNullOrEmpty()) {
             onBackBarChanged(!url.contains(baseUrl))
             onUrlChanged(url)
             Log.d("HomeScreen", url)
         }
-        onCanGoBackChanged(view.canGoBack())
+        view?.let {
+            onCanGoBackChanged(it.canGoBack())
+        }
         super.doUpdateVisitedHistory(view, url, isReload)
     }
 
     override fun onPageStarted(
-        view: WebView,
-        url: String,
+        view: WebView?,
+        url: String?,
         favicon: Bitmap?
     ) {
         super.onPageStarted(view, url, favicon)
