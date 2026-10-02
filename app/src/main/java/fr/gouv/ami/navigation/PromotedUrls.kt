@@ -7,11 +7,11 @@ enum class PromotedUrls(val alias: String) {
     companion object {
         fun from(value: String): PromotedUrls? =
             entries.firstOrNull { it.alias == value }
+
+        val promoted = arrayOf(
+            //The onboarding screen cannot be promoted until multi-webview support is implemented
+            //WELCOME_NOTIFICATION_ACTIVATION.alias,
+            PREFERENCES_NOTIFICATIONS_ACTIVATION.alias
+        )
     }
 }
-
-val promotedUrls = arrayOf(
-    //The onboarding screen cannot be promoted until multi-webview support is implemented
-    //PromotedUrls.WELCOME_NOTIFICATION_ACTIVATION.alias,
-    PromotedUrls.PREFERENCES_NOTIFICATIONS_ACTIVATION.alias
-)

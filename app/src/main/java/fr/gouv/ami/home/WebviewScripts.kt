@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import fr.gouv.ami.BuildConfig
 import fr.gouv.ami.R
+import fr.gouv.ami.navigation.PromotedUrls
 import fr.gouv.ami.navigation.promotedUrls
 import fr.gouv.ami.utils.DeviceIdUtils
 import kotlinx.serialization.encodeToString
@@ -33,7 +34,7 @@ class WebviewScripts {
         ): String {
             val deviceId = DeviceIdUtils(context).getOrCreateDeviceId()
             Log.d(TAG, "device_id sending in nativeInfosScript is $deviceId")
-            val urls = Json.encodeToString(promotedUrls)
+            val urls = Json.encodeToString(PromotedUrls.promoted)
 
             return """
         (function() {
