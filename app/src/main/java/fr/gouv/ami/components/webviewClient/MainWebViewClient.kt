@@ -39,7 +39,11 @@ class MainWebViewClient(
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
 
         Log.d(TAG, "shouldOverrideUrlLoading is called from ${request.url?.toString()}")
-        webViewModel.aliases.forEach { urlAlias ->
+
+        val urlAlias = webViewModel.aliases.firstOrNull {
+            request.url.toString().endsWith(it.pattern)
+        }
+        urlAlias?.let {
             if (request.url.toString().endsWith(urlAlias.pattern)) {
                 view.goBack()
                 PromotedUrls.from(urlAlias.alias)?.let { alias ->
