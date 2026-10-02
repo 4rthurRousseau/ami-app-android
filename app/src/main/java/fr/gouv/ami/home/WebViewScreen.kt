@@ -186,7 +186,7 @@ fun WebViewScreen(
                                         { result ->
                                             val aliasesJson = Json.decodeFromString<String>(result)
                                             webViewViewModel.aliases =
-                                                Json.decodeFromString<Array<UrlAliases?>>(
+                                                Json.decodeFromString<Array<UrlAliases>>(
                                                     aliasesJson
                                                 )
                                         })

@@ -38,15 +38,14 @@ class MainWebViewClient(
 
         Log.d(TAG, "shouldOverrideUrlLoading is called from ${request?.url?.toString()}")
         webViewModel.aliases.forEach { urlAlias ->
-            urlAlias?.let {
-                if (request?.url.toString().endsWith(it.pattern)) {
-                    view?.goBack()
-                    PromotedUrls.from(urlAlias.alias)?.let { alias ->
-                        val screen = NavigatorMapping.resolve(alias)
-                        navigate(screen ?: Screen.Home) }
-
-                    return true
+            if (request?.url.toString().endsWith(urlAlias.pattern)) {
+                view?.goBack()
+                PromotedUrls.from(urlAlias.alias)?.let { alias ->
+                    val screen = NavigatorMapping.resolve(alias)
+                    navigate(screen ?: Screen.Home)
                 }
+
+                return true
             }
         }
 
