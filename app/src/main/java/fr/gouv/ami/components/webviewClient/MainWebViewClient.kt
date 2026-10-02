@@ -47,6 +47,7 @@ class MainWebViewClient(
             if (request?.url.toString().endsWith(urlAlias.pattern)) {
                 view?.goBack()
                 PromotedUrls.from(urlAlias.alias)?.let { alias ->
+                    Log.d(TAG, "navigate to native screen $alias with url ${urlAlias.pattern}")
                     val screen = NavigatorMapping.resolve(alias)
                     navigate(screen ?: Screen.Home)
                 }
