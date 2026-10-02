@@ -5,7 +5,6 @@ import android.util.Log
 import fr.gouv.ami.BuildConfig
 import fr.gouv.ami.R
 import fr.gouv.ami.navigation.PromotedUrls
-import fr.gouv.ami.navigation.promotedUrls
 import fr.gouv.ami.utils.DeviceIdUtils
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json

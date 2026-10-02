@@ -86,7 +86,7 @@ class MainWebViewClient(
     override fun onPageStarted(
         view: WebView,
         url: String,
-        favicon: Bitmap
+        favicon: Bitmap?
     ) {
         super.onPageStarted(view, url, favicon)
         Log.d(TAG, "onPageStarted with url $url")

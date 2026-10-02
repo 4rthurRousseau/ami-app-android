@@ -5,11 +5,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.google.firebase)
     alias(libs.plugins.plugin.serialization)
+    id("com.google.devtools.ksp")
 }
 
 // Create a variable called keystorePropertiesFile, and initialize it to your
@@ -176,7 +175,7 @@ dependencies {
 
     //room
     implementation(libs.androidx.room.runtime)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
     //firebase
