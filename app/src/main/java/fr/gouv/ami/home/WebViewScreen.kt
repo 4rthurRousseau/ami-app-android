@@ -204,7 +204,7 @@ fun WebViewScreen(
 
     LaunchedEffect(Unit) {
         webViewViewModel.refreshView.collect {
-            //webViewRef.value?.reload() doesn't work, the history is lost
+            //webViewViewModel.webView?.reload() doesn't work, the history is lost
             webViewViewModel.webView?.evaluateJavascript(
                 "window.location.reload();",
                 null
